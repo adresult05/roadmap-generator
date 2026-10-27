@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>마케팅 로드맵 생성기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f7f9;font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;color:#18202b}
+form{background:#fff;border:1px solid #dde1e7;border-radius:14px;padding:32px 28px;width:min(340px,calc(100vw - 32px));box-sizing:border-box}
+h1{font-size:19px;margin:0 0 6px}p{margin:0 0 20px;color:#5d6878;font-size:14px}
+input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #dde1e7;border-radius:8px;font:inherit;font-size:15px}
+button{margin-top:12px;width:100%;padding:12px;border:0;border-radius:8px;background:#1f6fd1;color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+button:disabled{opacity:.6;cursor:default}
+.msg{font-size:13px;margin-top:10px;color:#c0392b;min-height:1em}
+.loading{color:#5d6878;font-size:15px}
+</style>
+</head>
+<body>
+<div class="loading" id="loading">불러오는 중…</div>
+<form id="login" hidden>
+  <h1>마케팅 로드맵 생성기</h1>
+  <p>애드리절트 팀 비밀번호를 입력하세요.</p>
+  <input type="password" id="pw" autocomplete="current-password" required placeholder="비밀번호">
+  <button id="go">들어가기</button>
+  <div class="msg" id="msg"></div>
+</form>
+<script>
+(function () {
+  var FN = "https://rbuwcovlzroduojgkzru.supabase.co/functions/v1/roadmap"; // 예: https://xxxx.supabase.co/functions/v1/roadmap
+  function getTok() { try { return localStorage.getItem("rm_token") || ""; } catch (e) { return ""; } }
+  function setTok(t) { try { t ? localStorage.setItem("rm_token", t) : localStorage.removeItem("rm_token"); } catch (e) {} }
+  var form = document.getElementById("login"), msg = document.getElementById("msg"), go = document.getElementById("go");
+  function showLogin(text) {
+    document.getElementById("loading").hidden = true; form.hidden = false;
+    msg.textContent = text || ""; document.getElementById("pw").focus();
+  }
+  async function openApp() {
+    var t = getTok(); if (!t) return showLogin();
+    try {
+      var r = await fetch(FN + "/app", { headers: { "x-rm-token": t } });
+      if (r.status === 401) { setTok(""); return showLogin(); }
+      if (!r.ok) return showLogin("서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      var html = (await r.json()).html;
+      html = html.replace("<script>", "<script>window.RM_FN=" + JSON.stringify(FN) + ";<\/script><script>");
+      document.open(); document.write(html); document.close();
+    } catch (e) { showLogin("서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요."); }
+  }
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault(); go.disabled = true; msg.textContent = "";
+    try {
+      var r = await fetch(FN + "/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: document.getElementById("pw").value }) });
+      var j = await r.json().catch(function () { return {}; });
+      if (r.ok && j.token) { setTok(j.token); form.hidden = true; document.getElementById("loading").hidden = false; return openApp(); }
+      msg.textContent = j.code === "wrong_password" ? "비밀번호가 맞지 않아요." : j.code === "no_password" ? "관리자가 아직 비밀번호를 설정하지 않았어요." : "로그인하지 못했어요.";
+    } catch (err) { msg.textContent = "서버에 연결하지 못했어요."; }
+    go.disabled = false;
+  });
+  openApp();
+})();
+</script>
+</body>
+</html>
