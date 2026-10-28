@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>마케팅 로드맵 | 애드리절트</title>
+<style>
+html,body{margin:0;height:100%;background:#f6f7f9;font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;color:#18202b}
+#doc{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#f6f7f9}
+#msg{min-height:100%;display:grid;place-items:center;padding:24px;box-sizing:border-box;text-align:center;font-size:15px;color:#5d6878;line-height:1.6}
+#msg b{display:block;font-size:17px;color:#18202b;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div id="msg">불러오는 중…</div>
+<script>
+(function () {
+  var FN = "https://rbuwcovlzroduojgkzru.supabase.co/functions/v1/roadmap"; // 예: https://xxxx.supabase.co/functions/v1/roadmap
+  var msg = document.getElementById("msg");
+  function fail(t) { msg.innerHTML = "<div><b>로드맵을 열 수 없어요</b>" + t + "</div>"; }
+  var id = new URLSearchParams(location.search).get("id") || "";
+  if (!/^[A-Za-z0-9_-]{32}$/.test(id)) return fail("링크 주소가 올바르지 않아요. 받은 링크를 다시 확인해 주세요.");
+  fetch(FN + "/view?id=" + encodeURIComponent(id), { cache: "no-store" })
+    .then(function (r) { if (r.status === 404) throw "gone"; if (!r.ok) throw "err"; return r.json(); })
+    .then(function (j) {
+      if (j.client) document.title = j.client + " 마케팅 로드맵 | 애드리절트";
+      // 공유 문서는 스크립트가 실행되지 않는 격리된 틀 안에서만 보여 줌
+      var f = document.createElement("iframe");
+      f.id = "doc"; f.setAttribute("sandbox", "allow-popups allow-popups-to-escape-sandbox"); f.title = document.title;
+      f.srcdoc = j.html;
+      msg.remove(); document.body.appendChild(f);
+    })
+    .catch(function (e) {
+      fail(e === "gone" ? "링크가 만료되었거나 담당자가 공유를 중지했어요. 애드리절트 담당자에게 문의해 주세요." : "잠시 후 다시 열어 주세요.");
+    });
+})();
+</script>
+</body>
+</html>
